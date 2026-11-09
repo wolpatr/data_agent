@@ -1,0 +1,87 @@
+# Playbook — agent v0.1 (freqtrade dry-run, Bybit BTC/USDT)
+
+Spec: `.scratch/agent-v01-spec/spec.md` · Decisions: `.scratch/agent-v01-spec/map.md` · Strategy: `bot/user_data/strategies/EmaCrossBaseline.py`
+
+All commands run from the **repo root**. freqtrade runs via `python -m freqtrade` (the `freqtrade` executable may not be on PATH).
+
+## 0. One-time setup
+
+1. `python -m freqtrade install-ui` — downloads freqUI, served by the REST API.
+2. Copy `bot/config-private.example.json` → `bot/config-private.json` (gitignored) and set a long random password.
+3. `python -m freqtrade download-data -c bot/config.json --timeframes 1h --timerange 20250101-` — fills the feather store (public OHLCV, no keys).
+4. `python -m freqtrade recursive-analysis -c bot/config.json --timerange 20260901- -v` — confirm indicator variance ≈ 0% for the 100-candle startup window; raise `startup_candle_count` if not.
+5. Optional backtest sanity: `python -m freqtrade backtesting -c bot/config.json --timerange 20260101-`.
+
+## 1. Daily operation
+
+**Start** (from repo root):
+
+```
+python -m freqtrade trade --config bot/config.json --config bot/config-private.json --logfile bot/bot.log
+```
+
+**Re-arm** (the bot boots `STOPPED` by design — human-in-the-loop):
+
+```
+curl -s -X POST http://127.0.0.1:8080/api/v1/start -u "username:password"
+```
+
+**Dashboard**: open `http://127.0.0.1:8080` (freqUI).
+
+## 2. Control surface (localhost REST)
+
+| Action | Command | Effect |
+|---|---|---|
+| Pause entries (exits keep managed) | `POST /pause` | blocks new entries; resets on restart |
+| Full stop | `POST /stop` | halts loop; with `cancel_open_orders_on_exit` cancels unfilled orders |
+| Force-exit a trade | `POST /forceexit` | exits open trade immediately |
+| List/add/delete locks | `GET/POST/DELETE /locks` | manual entry-ban; persists in the DB |
+
+Aliases: `/stopentry` ≡ `/stopbuy` ≡ `/pause`. There is **no** `/stopexit`.
+
+**External kill switch** = stop the process (`Ctrl+C`). Open positions are never force-exited on shutdown; they survive in the DB and are picked up after the next start + re-arm.
+
+**Graceful unwind** (freqtrade docs pattern): `/pause` → let open trade close by signal/stoploss or `/forceexit` → `/stop`.
+
+## 3. Interventions policy
+
+Allowed: **pause entries, force-exit, full stop, manual locks**.
+Forbidden: **force-entering trades, editing the dry-run DB** — both poison attribution.
+
+Every manual action gets one line in `docs/interventions.md`: date · action · command · reason · bot state.
+
+## 4. Weekly review (gate evidence)
+
+SQL against the dry-run DB (open in any SQLite tool; inspect table names with `SELECT name FROM sqlite_master WHERE type='table';`):
+
+- All closed trades: `SELECT id, pair, open_date, close_date, close_profit, close_profit_abs, exit_reason FROM trades WHERE is_open=0 ORDER BY close_date;`
+- Stoploss-family exits: `SELECT * FROM trades WHERE exit_reason LIKE '%stop%';`
+- Protection locks fired: inspect the `pair_locks`-equivalent table by lock reason (`Auto lock` = the always-on 1-candle lock; named locks = protections).
+- Errors: scan `bot/bot.log` for `ERROR`/`WARNING` in the review window.
+
+## 5. Gate to v0.2 (from the map)
+
+Dry-run ends (and v0.2 model work unlocks) only when **all** hold:
+
+1. ≥2 weeks of continuous dry-run,
+2. ≥30 closed trades,
+3. incident review clean: no unexplained restarts/crashes in the final week.
+
+Record the gate verdict in `docs/interventions.md` with the numbers.
+
+## 6. Realism upgrade — strictly AFTER the gate (one explicit step)
+
+1. Create a Bybit **demo account** + demo funds on Bybit's demo page.
+2. Create **demo-scoped API keys** there.
+3. New config overlay: `"exchange": {"name": "bybit", "demo_trading": true, "api_key": ..., "secret": ...}` with `"dry_run": false` (the two are incompatible — verified).
+4. Fresh database file (`dry-run trades must not taint stats`) via a new `db_url`.
+5. Run in demo mode until the next evidence gate. The **real-money** switch (fresh DB, `dry_run: false`, real keys with no-withdrawal permissions, IP restriction, dedicated subaccount) is a separate future effort with its own verified checklist in the map's Decisions.
+
+## 7. First-run smoke checklist
+
+- [ ] `install-ui` done, freqUI reachable on `127.0.0.1:8080` after start
+- [ ] `download-data` populated `bot/user_data/data/bybit/` with feather files
+- [ ] `recursive-analysis` variance ≈ 0%
+- [ ] `trade` starts without configuration errors
+- [ ] `/ping` answers; `/start` re-arms; a golden-cross entry (or lock) eventually appears in freqUI
+- [ ] `Ctrl+C` kills cleanly; restart boots STOPPED; re-arm works

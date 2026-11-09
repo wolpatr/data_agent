@@ -1,0 +1,10 @@
+{
+    "api_server": {
+        "enabled": true,
+        "listen_ip_address": "127.0.0.1",
+        "listen_port": 8080,
+        "CORS_origins": [],
+        "username": "freqtrade",
+        "password": "CHANGE_ME_USE_A_LONG_RANDOM_STRING"
+    }
+}

@@ -1,0 +1,3 @@
+[lint.per-file-ignores]
+# freqtrade strategies declare config via mutable class attributes by design.
+"bot/user_data/strategies/*.py" = ["RUF012"]

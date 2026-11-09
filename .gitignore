@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+bot/config-private.json
+bot/tradesv3.dryrun.sqlite
+bot/bot.log
+bot/user_data/data/
+bot/user_data/hyperopt_results/
+bot/user_data/backtest_results/

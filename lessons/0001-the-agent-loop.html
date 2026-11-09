@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson 0001 · The Agent Loop</title>
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+
+<header class="lesson-meta">
+  <span>Lesson 0001</span>&nbsp;·&nbsp;<span>Unit: Agent architecture</span>&nbsp;·&nbsp;<span>≈ 15 min</span>
+</header>
+
+<h1>The Agent Loop</h1>
+
+<p>Your mission is an agent that buys and sells crypto unsupervised.<sup class="cite"><a href="../MISSION.md">mission</a></sup> Good news: every autonomous trading bot ever built — from hobby scripts to the systems analyzed in research surveys<sup class="cite"><a href="https://arxiv.org/abs/2003.11352" title="Fang et al., Cryptocurrency Trading: A Comprehensive Survey">[1]</a></sup> — is a variation of the same four-step cycle. Learn this loop and you hold the skeleton of the whole project. Everything else (better signals, lower fees, smarter classifiers) lives inside one of these four boxes.</p>
+
+<h2>1 · Observe — read the market</h2>
+<p>Pull current market state: a <a href="../reference/glossary.html#ticker">ticker</a> (last price), historical candles (<a href="../reference/glossary.html#ohlcv">OHLCV</a>), or the full <a href="../reference/glossary.html#order-book">order book</a>. You will not hand-roll this: the <a href="https://docs.ccxt.com/">CCXT</a> library gives one unified API (JavaScript, Python, and more) for 100+ exchanges (verified, `npm install ccxt` / `pip install ccxt`), so your Observe code survives switching exchanges later.</p>
+
+<h2>2 · Decide — classify the situation</h2>
+<p>A decision function takes <em>(market state, current position)</em> and returns <code>BUY | SELL | HOLD</code> plus a reason. The "analyser that triggers when to buy and sell" you described lives entirely here. The field already has decades of this: technical-indicator rules,<sup class="cite"><a href="https://arxiv.org/abs/2003.11352">[1]</a></sup> classical ML classifiers — 41 of them benchmarked on Bitcoin with trading metrics<sup class="cite"><a href="https://arxiv.org/abs/2407.18334">[2]</a></sup> — and even LLM-based agents.<sup class="cite"><a href="https://arxiv.org/abs/2407.09546">[3]</a></sup> Your job per mission is to borrow from that line of work, not invent strategy #147.</p>
+
+<h2>3 · Execute — place the order</h2>
+<p>Translate the decision into an actual <a href="../reference/glossary.html#market-order">order</a> and submit it to the exchange. This is where the real world fights back: minimum order sizes, insufficient balance, timeouts, partial fills. Battle-tested bots treat execution error handling as a first-class subsystem, not an afterthought.<sup class="cite"><a href="https://www.freqtrade.io/en/stable/bot-basics/">[4]</a></sup></p>
+
+<h2>4 · Evaluate — close the loop</h2>
+<p>Log what happened, compare it to what you expected, and let that record improve future decisions. The CryptoTrade paper formalises this as a <em>reflective mechanism</em> — the agent reviews past decisions to refine the next ones.<sup class="cite"><a href="https://arxiv.org/abs/2407.09546">[3]</a></sup> Autonomy without evaluation is just a blind slot machine.</p>
+
+<div class="callout">
+<p class="label">Why the ladder matters: backtest → paper → live</p>
+<p>Autonomy means nobody double-checks in the moment, so safety comes from the loop itself: test on historical data (<a href="../reference/glossary.html#backtest">backtesting</a>), then run with fake money (<a href="../reference/glossary.html#dry-run">dry-run / paper trading</a>), then — only then — real money. Freqtrade, the most battle-tested open-source crypto bot, is emphatic: <em>"Always start by running a trading bot in Dry-run."</em><sup class="cite"><a href="https://www.freqtrade.io/en/stable/">[4]</a></sup></p>
+</div>
+
+<h2>Run one yourself</h2>
+<p>The simulator below is the four boxes live. The Decide step uses a classic signal: an <a href="../reference/glossary.html#ema">EMA crossover</a> — when the fast average crosses above the slow average, the market may be turning up (BUY); the reverse is a SELL.</p>
+
+<div data-loop-sim></div>
+
+<p><strong>Tight-feedback exercise (2 min):</strong> press <em>Autoplay</em> and watch equity. Reset, then try <code>fast=20, slow=30</code>; reset, then <code>fast=3, slow=50</code>. Notice: no parameter pair wins in every regime — sideways markets chop the crossover strategy to pieces. Keep that observation; it is the exact reason Lesson 0002 is about transaction costs and honest testing.</p>
+
+<h2>Check yourself (instant feedback)</h2>
+
+<div class="quiz" data-quiz>
+  <div class="q">
+    <p class="q-text">The agent just decided SELL. Which module turns that into an order on the exchange?</p>
+    <button class="opt" data-ok>The execution module converts decisions into orders</button>
+    <button class="opt">The evaluation module converts decisions into orders</button>
+    <button class="opt">The observation module converts decisions into orders</button>
+    <div class="explain">Decide only outputs an intention (BUY/SELL/HOLD). <em>Execute</em> is the box that turns it into a real order via the exchange API.</div>
+  </div>
+  <div class="q">
+    <p class="q-text">Why does the mission climb backtest → paper → live instead of going straight to live?</p>
+    <button class="opt" data-ok>Paper runs catch mistakes before money matters</button>
+    <button class="opt">Dry runs are required by every exchange</button>
+    <button class="opt">Fake money buys time while code compiles</button>
+    <button class="opt">Live markets ban agents during early testing</button>
+    <div class="explain">With no human in the loop, the ladder of closed feedback loops <em>is</em> the safety system. Exchanges do not require it; the mission's risk discipline does.</div>
+  </div>
+  <div class="q">
+    <p class="q-text">Per your mission, where does the buy/sell decision logic come from?</p>
+    <button class="opt">Invented from scratch and tuned until profitable</button>
+    <button class="opt" data-ok>Adapted from published research, then validated first</button>
+    <button class="opt">Copied from the first blog post seen</button>
+    <button class="opt">Delegated wholly to an anonymous internet forum</button>
+    <div class="explain">Mission constraint: adapt prior research (surveys, benchmarked classifiers, battle-tested bots) and validate it on history before any risk.</div>
+  </div>
+</div>
+
+<h2>Your move before the next session</h2>
+<p><strong>Primary source (≈10 min):</strong> read Freqtrade's <a href="https://www.freqtrade.io/en/stable/bot-basics/"><em>Bot Basics</em></a>. It is Python, but read it as an architecture document: map every paragraph onto Observe / Decide / Execute / Evaluate. When a paragraph mentions something you do not recognise, check the <a href="../reference/glossary.html">glossary</a>.</p>
+
+<div class="callout">
+<p class="label">Ask your teacher</p>
+<p>Anything that felt unclear — "what's an EMA", "why crossover, of all signals", "how would I structure this as TS files" — ask me in the chat. Small questions are my exact job; the glossary exists because of them. Next session we start Lesson 0002: <em>transaction costs — the research that showed naive strategies die the moment fees arrive</em>.</p>
+</div>
+
+<div class="src">
+<p><strong>Sources cited in this lesson</strong></p>
+<ol>
+<li>Fang et al. (2020, rev. 2022). <a href="https://arxiv.org/abs/2003.11352">Cryptocurrency Trading: A Comprehensive Survey</a>. arXiv:2003.11352.</li>
+<li>Jabbar &amp; Jalil (2024). <a href="https://arxiv.org/abs/2407.18334">A Comprehensive Analysis of Machine Learning Models for Algorithmic Trading of Bitcoin</a>. arXiv:2407.18334.</li>
+<li>Li et al. (2024). <a href="https://arxiv.org/abs/2407.09546">CryptoTrade: A Reflective LLM-based Agent to Guide Zero-shot Cryptocurrency Trading</a>. EMNLP 2024.</li>
+<li>Freqtrade documentation. <a href="https://www.freqtrade.io/en/stable/bot-basics/">Bot Basics</a>, <a href="https://www.freqtrade.io/en/stable/">home</a>. · <a href="https://docs.ccxt.com/">CCXT manual</a>.</li>
+</ol>
+</div>
+
+<script src="../assets/quiz.js"></script>
+<script src="../assets/loop-sim.js"></script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glossary · Crypto trading agent</title>
+<link rel="stylesheet" href="../assets/styles.css">
+</head>
+<body>
+
+<header class="lesson-meta">
+  <span>Reference</span>&nbsp;·&nbsp;<span>Glossary</span>&nbsp;·&nbsp;<span>maintained across lessons</span>
+</header>
+
+<h1>Glossary — the agent's vocabulary</h1>
+
+<p>These definitions are canonical: every lesson in this course uses them exactly like this. Term claims cite a source where one exists.</p>
+
+<dl class="glossary">
+
+<dt id="pair">pair (e.g. <code>BTC/USDT</code>)</dt>
+<dd>The two assets being exchanged: base (<code>BTC</code>) against quote (<code>USDT</code>). Buying the pair means spending quote to hold base. — <a href="https://docs.ccxt.com/">CCXT manual</a></dd>
+
+<dt id="spot">spot</dt>
+<dd>Trading the asset itself, not contracts on it; no leverage, no expiry. Your agent's sandbox for now.</dd>
+
+<dt id="ohlcv">OHLCV (candle)</dt>
+<dd>Open, High, Low, Close, Volume for one time interval (a <b>timeframe</b>, e.g. 1h). The standard unit of market history you will fetch with <code>fetchOHLCV</code>.</dd>
+
+<dt id="ticker">ticker</dt>
+<dd>The cheapest possible market snapshot: last price, bid/ask. What you Observe between candle closes.</dd>
+
+<dt id="order-book">order book</dt>
+<dd>The exchange's pending limit orders (ask side / bid side). The gap between best bid and best ask is the <b>spread</b>.</dd>
+
+<dt id="market-order">market order</dt>
+<dd>"Trade now at whatever the book offers." Guaranteed fill (if liquidity exists), not a guaranteed price. Slippage costs more when the order is big.</dd>
+
+<dt id="limit-order">limit order</dt>
+<dd>"Trade only at my price or better." Price-controlled but may never fill. Classic autonomy trade-off: market orders finish, limit orders negotiate.</dd>
+
+<dt id="fees">maker / taker fees (bps)</dt>
+<dd>Per-trade fee in basis points (1 bps = 0.01%). <b>Taker</b> = you cross the spread (market orders, aggressive limits). <b>Maker</b> = you provide liquidity. Fees are why Lesson 0002 exists: research shows naive sign-switching strategies are profitable until fees arrive.<sup class="cite"><a href="https://arxiv.org/abs/2606.00060">[1]</a></sup></dd>
+
+<dt id="ema">EMA (exponential moving average)</dt>
+<dd>A weighted average of past prices that favours recent prices. Widely used signal basis; crossovers of a fast and a slow EMA are the textbook trend signal.<sup class="cite"><a href="https://arxiv.org/abs/2003.11352">[2]</a></sup></dd>
+
+<dt id="position">position</dt>
+<dd>What you currently hold. Flat (no exposure) or long (holding the base asset). Exposure changes only when you Execute.</dd>
+
+<dt id="signal">signal</dt>
+<dd>The Decide module's output: BUY / SELL / HOLD plus its reason. The reason is not decoration — it is your audit trail.</dd>
+
+<dt id="backtest">backtest</dt>
+<dd>Replay the agent's decisions on historical data as if it had run then. The cheapest feedback loop — and the easiest one to cheat (that's Lesson 0002's topic).</dd>
+
+<dt id="dry-run">dry-run / paper trading</dt>
+<dd>Run the real agent, real data, real API — but fake money and simulated fills. The last rung before live.<sup class="cite"><a href="https://www.freqtrade.io/en/stable/">[3]</a></sup></dd>
+
+<dt id="live">live trading</dt>
+<dd>Real money. Reached only after backtest → paper both show the system behaving as expected.</dd>
+
+<dt id="drawdown">drawdown</dt>
+<dd>Drop from the highest equity point reached so far. Risk-management language is written in drawdown, not in returns alone.</dd>
+
+<dt id="sharpe">Sharpe ratio</dt>
+<dd>Return earned per unit of risk (excess return ÷ volatility). The trading-metric papers use it to rank strategies<sup class="cite"><a href="https://arxiv.org/abs/2407.18334">[4]</a></sup> — because +65%/yr with Sharpe &lt; 1 is a different beast than with Sharpe &gt; 1.</dd>
+
+<dt id="walk-forward">walk-forward</dt>
+<dd>Train/tune on a past window, test on the next unseen window, roll everything forward, repeat 20–30×. Research's answer to "why did my backtest lie?"<sup class="cite"><a href="https://arxiv.org/abs/2606.00060">[1]</a></sup></dd>
+
+<dt id="turnover">turnover</dt>
+<dd>How much notional value trades per unit time. High turnover × fee bps = a silent strategy killer<sup class="cite"><a href="https://arxiv.org/abs/2606.00060">[1]</a></sup>.</dd>
+
+</dl>
+
+<div class="src">
+<p><strong>Sources</strong></p>
+<ol>
+<li>Bysik &amp; Ślepaczuk (2026). <a href="https://arxiv.org/abs/2606.00060">ML-Based Bitcoin Trading Under Transaction Costs: Evidence From Walk-Forward Forecasting</a>.</li>
+<li>Fang et al. (2020, rev. 2022). <a href="https://arxiv.org/abs/2003.11352">Cryptocurrency Trading: A Comprehensive Survey</a>.</li>
+<li>Freqtrade documentation. <a href="https://www.freqtrade.io/en/stable/">Home / dry-run guidance</a>.</li>
+<li>Jabbar &amp; Jalil (2024). <a href="https://arxiv.org/abs/2407.18334">A Comprehensive Analysis of ML Models for Algorithmic Trading of Bitcoin</a>.</li>
+</ol>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+{
+    "bot_name": "data-agent v0.1",
+    "max_open_trades": 1,
+    "stake_currency": "USDT",
+    "stake_amount": 250,
+    "tradable_balance_ratio": 0.99,
+    "dry_run": true,
+    "dry_run_wallet": 1000,
+    "db_url": "sqlite:///bot/tradesv3.dryrun.sqlite",
+    "cancel_open_orders_on_exit": true,
+    "dataformat_ohlcv": "feather",
+    "trading_mode": "spot",
+    "strategy": "EmaCrossBaseline",
+    "user_data_dir": "bot/user_data",
+    "exchange": {
+        "name": "bybit",
+        "pair_whitelist": ["BTC/USDT"]
+    },
+    "pairlists": [
+        {
+            "method": "StaticPairList"
+        }
+    ],
+    "order_types": {
+        "entry": "market",
+        "exit": "market",
+        "stoploss": "market",
+        "stoploss_on_exchange": false
+    },
+    "entry_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1,
+        "price_last_balance": 0.0,
+        "check_depth_of_market": {
+            "enabled": false,
+            "bids_to_ask_delta": 1
+        }
+    },
+    "exit_pricing": {
+        "price_side": "other",
+        "use_order_book": true,
+        "order_book_top": 1
+    },
+    "unfilledtimeout": {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes"
+    }
+}
