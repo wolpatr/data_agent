@@ -4,11 +4,11 @@ from EmaCrossBaseline import EmaCrossBaseline
 CONFIG = {"strategy": "EmaCrossBaseline", "stake_currency": "USDT", "dry_run": True}
 
 
-def build_candles(closes, volumes=None, start="2026-01-01"):
+def build_candles(closes, volumes=None):
     n = len(closes)
     if volumes is None:
         volumes = [100.0] * n
-    dates = pd.date_range(start=start, periods=n, freq="1h", tz="UTC")
+    dates = pd.date_range(start="2026-01-01", periods=n, freq="1h", tz="UTC")
     frame = pd.DataFrame(
         {
             "date": dates,

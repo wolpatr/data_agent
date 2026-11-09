@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 from freqtrade.configuration.config_validation import validate_config_schema
@@ -33,6 +34,13 @@ def test_public_config_validates_and_carries_the_decided_keys():
     assert config["exit_pricing"]["price_side"] == "other"
     assert config["strategy"] == "EmaCrossBaseline"
     assert config["user_data_dir"] == "bot/user_data"
+    assert config["bot_name"] == "data-agent v0.1"
+    assert config["unfilledtimeout"] == {
+        "entry": 10,
+        "exit": 10,
+        "exit_timeout_count": 0,
+        "unit": "minutes",
+    }
 
 
 def test_public_config_leaves_rails_and_state_to_their_owners():
@@ -59,7 +67,7 @@ def test_private_overlay_template_merges_and_validates():
 
 
 def test_real_private_config_is_ignored_by_git():
-    gitignore = (Path(__file__).resolve().parents[2] / ".gitignore").read_text(encoding="utf-8")
-    assert "bot/config-private.json" in gitignore
-    assert "bot/tradesv3.dryrun.sqlite" in gitignore
-    assert "bot/user_data/data/" in gitignore
+    repo = Path(__file__).resolve().parents[2]
+    for ignored_path in ("bot/config-private.json", "bot/tradesv3.dryrun.sqlite", "bot/user_data/data/"):
+        result = subprocess.run(["git", "check-ignore", ignored_path], check=False, cwd=repo, capture_output=True)
+        assert result.returncode == 0, f"{ignored_path} is not git-ignored"

@@ -120,6 +120,8 @@ Tests (red → green, in order):
 4. Code review (skill) passes; work committed to `master`.
 5. First-run smoke (playbook checklist) is a manual step for the user: `install-ui`, `recursive-analysis`, `download-data`, then start + re-arm.
 
+Evidence recorded in-build (2026-11-09): criterion 2 (`list-strategies` → `EmaCrossBaseline | OK`), criterion 3 (schema validation via T7/T8), lint (`ruff check bot` clean; `RUF012` scoped off for freqtrade's class-attribute convention in `ruff.toml`). Typechecking beyond ruff: none configured on this machine (mypy absent; report to user in the build summary).
+
 ## 10. Build amendments (2026-11-09, discovered during the TDD build)
 
 1. **Import surface**: `freqtrade.vendor.qtpylib.indicators` is **deprecated in 2026.10** ("will be removed; import from `technical` instead") — signals use `from technical.qtpylib import crossed_above, crossed_below`. The trigger-research snippet's vendor import is doc-lag.

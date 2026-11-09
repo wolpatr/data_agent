@@ -39,7 +39,7 @@ curl -s -X POST http://127.0.0.1:8080/api/v1/start -u "username:password"
 
 Aliases: `/stopentry` ≡ `/stopbuy` ≡ `/pause`. There is **no** `/stopexit`.
 
-**External kill switch** = stop the process (`Ctrl+C`). Open positions are never force-exited on shutdown; they survive in the DB and are picked up after the next start + re-arm.
+**External kill switch** = stop the process (`Ctrl+C`; SIGTERM takes the same shutdown path). Open positions are never force-exited on shutdown; they survive in the DB and are picked up after the next start + re-arm.
 
 **Graceful unwind** (freqtrade docs pattern): `/pause` → let open trade close by signal/stoploss or `/forceexit` → `/stop`.
 
@@ -51,6 +51,8 @@ Forbidden: **force-entering trades, editing the dry-run DB** — both poison att
 Every manual action gets one line in `docs/interventions.md`: date · action · command · reason · bot state.
 
 ## 4. Weekly review (gate evidence)
+
+Trade export for reports: `python -m freqtrade show-trades --db-url sqlite:///bot/tradesv3.dryrun.sqlite` (or `--print-json` for export).
 
 SQL against the dry-run DB (open in any SQLite tool; inspect table names with `SELECT name FROM sqlite_master WHERE type='table';`):
 
