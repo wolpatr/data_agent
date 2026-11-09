@@ -29,6 +29,8 @@ curl.exe -s -X POST http://127.0.0.1:8080/api/v1/start -u "username:password"
 
 **Dashboard**: open `http://127.0.0.1:8080` (freqUI).
 
+**Daily check (dev mode)** — a 5-second look: freqUI state = `running`, no new `ERROR` lines in `bot/bot.log`. The bot runs in dev mode with **no uptime investment** (decided in the integration-readiness grill): if the machine sleeps or the process dies, the loop just stops (kill-switch semantics) and you restart + re-arm manually. The gate clock honestly pauses during downtime — note any such gaps in the weekly review file.
+
 ## 2. Control surface (localhost REST)
 
 | Action | Command (`curl.exe` — PowerShell's `curl` alias has no `-u`) | Effect |
@@ -53,6 +55,8 @@ Every manual action gets one line in `docs/interventions.md`: date · action · 
 
 ## 4. Weekly review (gate evidence)
 
+Record the output in **`docs/reviews/weekly-NNNN.md`** — one file per week, then anomalies and the eventual gate verdict (verdict lives in week 2's file, linked from `docs/interventions.md`). Refresh the feather store manually whenever a backtest is needed during the gate (re-run the `download-data` command — no scheduling).
+
 Trade export for reports: `uv run freqtrade show-trades --db-url sqlite:///bot/tradesv3.dryrun.sqlite` (or `--print-json` for export).
 
 SQL against the dry-run DB (open in any SQLite tool; inspect table names with `SELECT name FROM sqlite_master WHERE type='table';`):
@@ -66,7 +70,7 @@ SQL against the dry-run DB (open in any SQLite tool; inspect table names with `S
 
 Dry-run ends (and v0.2 model work unlocks) only when **all** hold:
 
-1. ≥2 weeks of continuous dry-run,
+1. ≥2 weeks in dry-run (dev mode: downtime gaps noted per week; a strict-continuous requirement, if ever disputed, applies only to a post-realism-upgrade run),
 2. ≥30 closed trades,
 3. incident review clean: no unexplained restarts/crashes in the final week.
 
