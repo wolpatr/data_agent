@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .pytest_cache/
+.venv/
 bot/config-private.json
 bot/tradesv3.dryrun.sqlite
 bot/bot.log

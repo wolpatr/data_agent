@@ -99,7 +99,7 @@ Lives in `docs/playbook.md` (full runbook). Anchors:
 
 ## 8. TDD plan — pre-agreed seams
 
-Tooling: **pytest** with freqtrade importable (`pip install freqtrade`). Lint/typecheck: best available on the machine (mypy/ruff if present; otherwise `py_compile` via pytest itself) — reported at the end.
+Tooling: **pytest** in the uv-managed environment (`uv sync` from root; `uv run pytest bot/tests -q` — freqtrade, TA-Lib, pandas all inside `uv.lock`). Lint/typecheck: **ruff** (same env; `uv run ruff check bot`) — mypy not configured on this machine; reported in the build summary.
 
 Tests (red → green, in order):
 
@@ -128,3 +128,4 @@ Evidence recorded in-build (2026-11-09): criterion 2 (`list-strategies` → `Ema
 2. **`order_types` schema**: freqtrade requires `stoploss` + `stoploss_on_exchange` keys when the block is declared — config carries `"stoploss": "market"` (simulated in dry-run) and `"stoploss_on_exchange": false` (Bybit spot has none).
 3. **Market-order pricing rule**: freqtrade validation rejects market entry with `entry_pricing.price_side = "same"` — both pricing blocks use `price_side: "other"` (fill against the opposite book side). Locked by test.
 4. **TA-Lib EMA warm-up**: ta-Lib's EMA yields NaN for the first `timeperiod-1` candles; the pandas-ewm reference equality holds from that index onward (locked by test).
+5. **Environment (2026-11-09, user-directed)**: dependencies are contained in **uv** — root `pyproject.toml` (main: `freqtrade>=2026.10`; dev group: `pytest`, `ruff`) + `uv.lock` + `.venv` (gitignored). One-time `uv sync`; every build/run command gets the `uv run` prefix (`uv run pytest bot/tests -q`, `uv run ruff check bot`, `uv run freqtrade ...`). The playbook's commands already reflect this.

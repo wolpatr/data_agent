@@ -1,0 +1,15 @@
+[project]
+name = "data-agent"
+version = "0.1.0"
+description = "Autonomous crypto trading agent - freqtrade dry-run v0.1 (spec: .scratch/agent-v01-spec/spec.md)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "freqtrade>=2026.10",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2",
+    "ruff>=0.14",
+]

@@ -2,22 +2,23 @@
 
 Spec: `.scratch/agent-v01-spec/spec.md` · Decisions: `.scratch/agent-v01-spec/map.md` · Strategy: `bot/user_data/strategies/EmaCrossBaseline.py`
 
-All commands run from the **repo root**. freqtrade runs via `python -m freqtrade` (the `freqtrade` executable may not be on PATH).
+All commands run from the **repo root**. Dependencies are managed by **uv** (`pyproject.toml` + `uv.lock`): run `uv sync` once to build `.venv`, and run every Python command as `uv run <command>` inside the project.
 
 ## 0. One-time setup
 
-1. `python -m freqtrade install-ui` — downloads freqUI, served by the REST API.
-2. Copy `bot/config-private.example.json` → `bot/config-private.json` (gitignored) and set a long random password.
-3. `python -m freqtrade download-data -c bot/config.json --timeframes 1h --timerange 20250101-` — fills the feather store (public OHLCV, no keys).
-4. `python -m freqtrade recursive-analysis -c bot/config.json --timerange 20260901- -v` — confirm indicator variance ≈ 0% for the 100-candle startup window; raise `startup_candle_count` if not.
-5. Optional backtest sanity: `python -m freqtrade backtesting -c bot/config.json --timerange 20260101-`.
+1. `uv sync` — creates `.venv` from `uv.lock` (freqtrade + pytest + ruff).
+2. `uv run freqtrade install-ui` — downloads freqUI, served by the REST API.
+3. Copy `bot/config-private.example.json` → `bot/config-private.json` (gitignored) and set a long random password.
+4. `uv run freqtrade download-data -c bot/config.json --timeframes 1h --timerange 20250101-` — fills the feather store (public OHLCV, no keys).
+5. `uv run freqtrade recursive-analysis -c bot/config.json --timerange 20260901- -v` — confirm indicator variance ≈ 0% for the 100-candle startup window; raise `startup_candle_count` if not.
+6. Optional backtest sanity: `uv run freqtrade backtesting -c bot/config.json --timerange 20260101-`.
 
 ## 1. Daily operation
 
 **Start** (from repo root):
 
 ```
-python -m freqtrade trade --config bot/config.json --config bot/config-private.json --logfile bot/bot.log
+uv run freqtrade trade --config bot/config.json --config bot/config-private.json --logfile bot/bot.log
 ```
 
 **Re-arm** (the bot boots `STOPPED` by design — human-in-the-loop):
@@ -52,7 +53,7 @@ Every manual action gets one line in `docs/interventions.md`: date · action · 
 
 ## 4. Weekly review (gate evidence)
 
-Trade export for reports: `python -m freqtrade show-trades --db-url sqlite:///bot/tradesv3.dryrun.sqlite` (or `--print-json` for export).
+Trade export for reports: `uv run freqtrade show-trades --db-url sqlite:///bot/tradesv3.dryrun.sqlite` (or `--print-json` for export).
 
 SQL against the dry-run DB (open in any SQLite tool; inspect table names with `SELECT name FROM sqlite_master WHERE type='table';`):
 
