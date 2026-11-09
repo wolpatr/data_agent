@@ -94,3 +94,12 @@ Same public shape as v0.1 config plus: `"pair_whitelist": ["BTC/USDT","ETH/USDT"
 3. Config-v02 schema-validates with the freqai block (and fails without required keys).
 4. Code-review pass; committed.
 5. Post-build manual step (user, post-gate): first live dry-run boot of v0.2 per §9; news archive begins accumulating immediately on every v0.2 start.
+
+## 12. Build-review amendments (2026-11-09, two-axis review fixes)
+
+1. **Incremental fetch marker corrected**: `time_from` uses `latest_fetch_ts` (max of successful fetch stamps) — the build originally used `min(stamps)`, refetching the retained window every call; with boundary overlap, `_dedup` in the feature loader also guards against double-counted buckets.
+2. **AV premium/notice responses are never archived**: a payload without `"feed"` (Information/Note bodies — the documented premium/rate-limit shape) is discarded, not stored as data; fetching degrades silently per the quota scheduler.
+3. **CryptoPanic adapter implemented, token-gated**: env `CRYPTOPANIC_TOKEN` + `CRYPTOPANIC_API_URL` (plan-qualified base URL, dashboard-verify at signup per the fact-check ⚠️); without them the bot runs AV-only with `cp_*` features zero-filled. §4.5 stands — features exist from archive start.
+4. **"Filled downstream as zero-count" is now literal**: news/cp columns are zero-filled after the bucket-end merge (neutral no-news), preventing FreqAI row-drops at archive start.
+5. **Spec §4.1 fallback clause dropped**: "fallback to `overall_sentiment_score` when no ticker row exists" was incoherent for pair mapping (an article without a whitelist ticker row has no pair); the adapter keeps ticket-matched whitelist coins only. Function sketch `load_articles(source, timerange)` was implemented as `load_archive_features_dir(news_parent, whitelist_coins)` + `normalize_av_response`/`normalize_cp_posts`.
+6. **Strategy hygiene from the standards axis**: dead `feature_engineering_expand_*` no-op overrides removed; archive writes reuse `newsstore.append_jsonl`; the v0.2 rails test now compares protections directly against `EmaCrossBaseline` (self-maintaining); `startup_candle_count` asserted exactly 100; the exit test recomputes the crossed-below reference independently instead of the weaker count-based check.

@@ -16,6 +16,8 @@ from featurelab import fee_aware_label_classes, market_features
 from freqtrade.strategy import IStrategy
 from newsfeed import merge_article_features
 from newsstore import (
+    append_jsonl,
+    latest_fetch_ts,
     load_archive_features_dir,
     should_fetch,
     time_from_literal,
@@ -70,16 +72,11 @@ class FreqaiEmaExit(IStrategy):
     def _news_dir(self) -> Path:
         return Path(self.config.get("user_data_dir", "bot/user_data")) / "news" / "av"
 
+    def _cryptopanic_dir(self) -> Path:
+        return Path(self.config.get("user_data_dir", "bot/user_data")) / "news" / "cryptopanic"
+
     def _whitelist_coins(self) -> set[str]:
         return {p.split("/")[0] for p in self.config["exchange"]["pair_whitelist"]}
-
-    def feature_engineering_expand_all(self, dataframe: DataFrame, period: int,
-                                       metadata: dict, **kwargs) -> DataFrame:
-        return dataframe
-
-    def feature_engineering_expand_basic(self, dataframe: DataFrame, metadata: dict,
-                                         **kwargs) -> DataFrame:
-        return dataframe
 
     def feature_engineering_standard(self, dataframe: DataFrame, metadata: dict) -> DataFrame:
         groups = self.config.get("v02_feature_groups", {})
@@ -90,14 +87,22 @@ class FreqaiEmaExit(IStrategy):
                 dataframe[f"%-{col}"] = features[col]
 
         if groups.get("news", True):
-            news_dir = self._news_dir()
-            if news_dir.exists():
-                features = load_archive_features_dir(news_dir, self._whitelist_coins())
+            av_dir = self._news_dir()
+            cp_dir = self._cryptopanic_dir()
+            if av_dir.exists() or cp_dir.exists():
+                features = load_archive_features_dir(av_dir.parent,
+                                                     whitelist_coins=self._whitelist_coins())
                 if not features.empty:
                     merged = merge_article_features(dataframe, features, metadata["pair"],
                                                     self.timeframe)
-                    dataframe["%-news_sentiment_mean"] = merged["news_sentiment_mean"].to_numpy()
-                    dataframe["%-news_count"] = merged["news_count"].to_numpy()
+                    merged[["news_sentiment_mean", "news_count", "cp_sentiment", "cp_count"]] = (
+                        merged[["news_sentiment_mean", "news_count", "cp_sentiment", "cp_count"]]
+                        .fillna(0.0)
+                    )
+                    for col in (
+                        "%-news_sentiment_mean", "%-news_count", "%-cp_sentiment", "%-cp_count"
+                    ):
+                        dataframe[col] = merged[col.removeprefix("%-")].to_numpy()
 
         if groups.get("macro", False):
             macro_dir = Path(self.config.get("user_data_dir", "bot/user_data")) / "macro"
@@ -147,32 +152,39 @@ class FreqaiEmaExit(IStrategy):
         return dataframe
 
     def bot_loop_start(self, current_time: dt.datetime, **kwargs) -> None:
-        """Refresh the news self-archive within the AV daily budget (best effort)."""
+        """Refresh the news self-archive (best effort; degrades silently offline)."""
+        self._refresh_alpha_vantage(current_time)
+        self._refresh_cryptopanic(current_time)
+
+    def _stamp_history(self, log_path: Path) -> list[dt.datetime]:
+        if not log_path.exists():
+            return []
+        stamps: list[dt.datetime] = []
+        for entry in json.loads(log_path.read_text(encoding="utf-8")):
+            parsed = dt.datetime.fromisoformat(entry)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=dt.UTC)
+            stamps.append(parsed)
+        return stamps
+
+    def _refresh_alpha_vantage(self, current_time: dt.datetime) -> None:
         api_key = os.environ.get("ALPHAVANTAGE_API_KEY")
         if not api_key:
             return
+        import urllib.error
         import urllib.request
 
         news_dir = self._news_dir()
         log_path = news_dir / "fetch_log.json"
-        history = []
-        if log_path.exists():
-            history = json.loads(log_path.read_text(encoding="utf-8"))
-        stamps = [
-            dt.datetime.fromisoformat(s) if dt.datetime.fromisoformat(s).tzinfo else
-            dt.datetime.fromisoformat(s).replace(tzinfo=dt.UTC)
-            for s in history
-        ]
-        if news_dir.exists() and not should_fetch(
-            current_time, stamps, max_per_day=25, min_interval_hours=1
-        ):
+        stamps = self._stamp_history(log_path)
+        if not should_fetch(current_time, stamps, max_per_day=25, min_interval_hours=1):
             return
         coins = sorted(self._whitelist_coins())
         tickers = ",".join(f"CRYPTO:{c}" for c in coins)
         url = (
             "https://www.alphavantage.co/query?function=NEWS_SENTIMENT"
             f"&tickers={tickers}&limit=50"
-            f"&time_from={time_from_literal(min(stamps) if stamps else current_time - dt.timedelta(days=3))}"
+            f"&time_from={time_from_literal(latest_fetch_ts(stamps))}"
             f"&apikey={api_key}"
         )
         try:
@@ -180,11 +192,38 @@ class FreqaiEmaExit(IStrategy):
                 payload = json.load(response)
         except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError):
             return
-        news_dir.mkdir(parents=True, exist_ok=True)
-        stamp = current_time.strftime("%Y-%m-%d")
-        day_file = news_dir / f"{stamp}.jsonl"
-        with day_file.open("a", encoding="utf-8") as fh:
-            fh.write(json.dumps({"fetch_ts": current_time.isoformat(), "payload": payload},
-                                separators=(",", ":")) + "\n")
-        history.append(current_time.isoformat())
-        log_path.write_text(json.dumps(history[-100:]), encoding="utf-8")
+        if "feed" not in payload:
+            return
+        append_jsonl(news_dir / f"{current_time:%Y-%m-%d}.jsonl",
+                     {"fetch_ts": current_time.isoformat(), "payload": payload})
+        history = stamps + [current_time]
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(json.dumps([h.isoformat() for h in history[-100:]]), encoding="utf-8")
+
+    def _refresh_cryptopanic(self, current_time: dt.datetime) -> None:
+        token = os.environ.get("CRYPTOPANIC_TOKEN")
+        api_url = os.environ.get("CRYPTOPANIC_API_URL")
+        if not token or not api_url:
+            return
+        import urllib.error
+        import urllib.request
+
+        cp_dir = self._cryptopanic_dir()
+        log_path = cp_dir / "fetch_log.json"
+        stamps = self._stamp_history(log_path)
+        if not should_fetch(current_time, stamps, max_per_day=48, min_interval_hours=1):
+            return
+        currencies = ",".join(sorted(self._whitelist_coins()))
+        url = f"{api_url.rstrip('/')}/posts/?auth_token={token}&currencies={currencies}&public=true"
+        try:
+            with urllib.request.urlopen(url, timeout=30) as response:
+                payload = json.load(response)
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError, KeyError):
+            return
+        if "results" not in payload:
+            return
+        append_jsonl(cp_dir / f"{current_time:%Y-%m-%d}.jsonl",
+                     {"fetch_ts": current_time.isoformat(), "payload": payload})
+        history = stamps + [current_time]
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(json.dumps([h.isoformat() for h in history[-200:]]), encoding="utf-8")

@@ -43,27 +43,12 @@ def test_strategy_rails_contract_matches_v01():
     assert strategy.use_exit_signal is True
     assert strategy.exit_profit_only is False
     assert strategy.ignore_roi_if_entry_signal is False
-    assert strategy.startup_candle_count >= 26
-    expected = [
-        {"method": "CooldownPeriod", "stop_duration_candles": 2},
-        {
-            "method": "StoplossGuard",
-            "lookback_period_candles": 24,
-            "trade_limit": 2,
-            "stop_duration_candles": 4,
-            "required_profit": 0.0,
-            "only_per_pair": False,
-        },
-        {
-            "method": "MaxDrawdown",
-            "calculation_mode": "equity",
-            "lookback_period_candles": 168,
-            "trade_limit": 5,
-            "stop_duration_candles": 24,
-            "max_allowed_drawdown": 0.2,
-        },
-    ]
-    assert strategy.protections == expected
+    assert strategy.startup_candle_count == 100
+    from EmaCrossBaseline import EmaCrossBaseline as V01Strategy
+
+    assert strategy.protections == V01Strategy(
+        {"strategy": "EmaCrossBaseline", "stake_currency": "USDT", "dry_run": True}
+    ).protections
 
 
 def test_feature_groups_add_percent_prefixed_columns():
@@ -138,11 +123,13 @@ def test_exit_fires_on_death_cross_only():
 
     out = strategy.populate_exit_trend(df, {"pair": "BTC/USDT"})
 
+    expected_cross = (df["ema_fast"].shift(1) >= df["ema_slow"].shift(1)) & (
+        df["ema_fast"] < df["ema_slow"]
+    )
+    expected_idx = list(expected_cross.index[expected_cross])
     signals = out["exit_long"].fillna(0)
-    assert signals.value_counts().get(1, 0) >= 1
-    first_signal = signals.index[signals == 1][0]
-    expected = signals.index[signals == 1]
-    assert list(expected) == list(range(first_signal, len(df))) or len(expected) <= 3
+    assert signals.value_counts().get(1, 0) == len(expected_idx) > 0
+    assert list(signals.index[signals == 1]) == expected_idx
 
 
 def test_bot_loop_start_is_safe_without_api_key():

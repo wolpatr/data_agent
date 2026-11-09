@@ -112,8 +112,52 @@ def test_load_archive_features_dir_merges_all_daily_files(tmp_path):
     }
     append_jsonl(av_dir / "2026-11-10.jsonl", {"fetch_ts": "t1", "payload": day2})
 
-    features = load_archive_features_dir(av_dir, {"BTC", "ETH"})
+    features = load_archive_features_dir(tmp_path, {"BTC", "ETH"})
 
     btc = features.loc["BTC/USDT"]
     assert btc.loc["2026-11-09T09:00:00Z"]["news_count"] == 1
     assert btc.loc["2026-11-10T09:00:00Z"]["news_count"] == 1
+
+
+def test_dedup_prevents_double_counting_when_payload_appended_twice(tmp_path):
+    from newsstore import append_jsonl, load_archive_features_dir
+
+    av_dir = Path(tmp_path) / "av"
+    append_jsonl(av_dir / "2026-11-09.jsonl", {"fetch_ts": "t0", "payload": AV_SAMPLE})
+    append_jsonl(av_dir / "2026-11-09.jsonl", {"fetch_ts": "t1", "payload": AV_SAMPLE})
+
+    features = load_archive_features_dir(tmp_path, {"BTC", "ETH"})
+
+    assert features.loc["BTC/USDT"].loc["2026-11-09T09:00:00Z"]["news_count"] == 1
+
+
+def test_cryptopanic_posts_normalize_to_votes_sentiment(tmp_path):
+    from newsstore import append_jsonl, load_archive_features_dir
+
+    cp_payload = {
+        "results": [
+            {"published_at": "2026-11-09T09:30:00Z",
+             "votes": {"positive": 7, "negative": 3},
+             "currencies": [{"code": "BTC"}]},
+            {"published_at": "2026-11-09T09:40:00Z",
+             "votes": {"positive": 0, "negative": 10},
+             "currencies": [{"code": "BTC"}, {"code": "ETH"}]},
+            {"published_at": "2026-11-09T09:50:00Z",
+             "votes": {},
+             "currencies": [{"code": "ADA"}]},
+        ]
+    }
+    append_jsonl(Path(tmp_path) / "cryptopanic" / "2026-11-09.jsonl",
+                 {"fetch_ts": "t0", "payload": cp_payload})
+
+    features = load_archive_features_dir(tmp_path, {"BTC", "ETH"})
+
+    btc = features.loc["BTC/USDT"]
+    hour9 = btc.loc["2026-11-09T09:00:00Z"]
+    assert hour9["cp_count"] == 2
+    assert hour9["cp_sentiment"] == pytest.approx((0.4 + (-1.0)) / 2)
+    assert hour9["news_count"] == 0.0
+    eth = features.loc["ETH/USDT"]
+    assert eth.loc["2026-11-09T09:00:00Z"]["cp_count"] == 1
+    assert eth.loc["2026-11-09T09:00:00Z"]["cp_sentiment"] == pytest.approx(-1.0)
+    assert "ADA" not in features.index.get_level_values("pair")
