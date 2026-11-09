@@ -3,8 +3,8 @@ __pycache__/
 .pytest_cache/
 .venv/
 bot/config-private.json
-bot/tradesv3.dryrun.sqlite
-bot/bot.log
+bot/tradesv3.dryrun.sqlite*
+bot/bot.log*
 bot/user_data/data/
 bot/user_data/hyperopt_results/
 bot/user_data/backtest_results/
