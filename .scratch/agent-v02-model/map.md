@@ -31,7 +31,13 @@ A **build-ready v0.2 spec**: multi-source, multi-pair crypto agent on the existi
 
 ## Open decisions
 
-1. **Author the v0.2 spec** — `.scratch/agent-v02-model/spec.md` with the fact-checked API/config numbers patched in (Alpha Vantage ticker/score fields, CryptoPanic auth, `include_corr_pairlist` spot naming, minimal `freqai` block, Bybit spot fee); closes this map into the hand-off; implementation sessions follow (TDD, pre-agreed seams).
+_(none — map complete, 2026-11-09. Build per `spec.md`; the TDD build ran in the same session as the spec under the user's fast-path authorization.)_
+
+---
+
+*(Decisions index continues — see the spec-authoring entry below.)*
+
+- **v0.2 spec authored — map complete** (2026-11-09): spec at `.scratch/agent-v02-model/spec.md` covering pipeline/labels/features/strategy/config/cutover with fact-checked numbers (`research/fact-check-av-cryptopanic-freqai.md`); pre-agreed TDD seams S-A–S-F all built green (31 tests), `FreqaiEmaExit` resolves from `config-v02.json`. Build artifacts: `newsfeed.py`, `featurelab.py`, `newsstore.py`, `FreqaiEmaExit.py`, `config-v02.json`, archive layout `bot/user_data/news/` (gitignored). User authorization: fast path chosen after this map reached one open decision (spec authoring) — batched decisions + build in one session, per the recorded override pattern.
 
 ## Not yet specified
 

@@ -92,3 +92,13 @@ Record the gate verdict in `docs/interventions.md` with the numbers.
 - [ ] `trade` starts without configuration errors
 - [ ] `/ping` answers; `/start` re-arms; a golden-cross entry (or lock) eventually appears in freqUI
 - [ ] `Ctrl+C` kills cleanly; restart boots STOPPED; re-arm works
+
+## 8. v0.2 cutover (post-gate — `bot/config-v02.json`)
+
+1. Record the v0.1 gate verdict in `docs/reviews/` and `docs/interventions.md`.
+2. Stop the v0.1 process; the dry-run DB stays as the historical record.
+3. Set `ALPHAVANTAGE_API_KEY` in the environment (news features need the archive; CryptoPanic `auth_token` optional later).
+4. Start v0.2: `uv run freqtrade trade --config bot/config-v02.json --config bot/config-private.json --logfile bot/bot-v02.log`, re-arm via REST as usual.
+5. News self-archive grows under `bot/user_data/news/av/`; features only exist from archive start — expect the classifier to train without news signal depth for the first ~3 weeks (train_period_days 30 vs archive age); that gap is a known limitation, noted in the weekly reviews.
+6. The **same gate criteria re-apply to the v0.2 dry-run** (≥2 weeks, ≥30 trades, clean incident review) before any realism upgrade.
+7. Backtest validation command: `uv run freqtrade backtesting --config bot/config-v02.json --freqaimodel LightGBMClassifier --timerange <range> --enable-protections`.
