@@ -65,3 +65,11 @@ _Avoid_: buy signal, long signal
 **Death cross**:
 The fast EMA crossing below the slow EMA — the v0.1 exit rule.
 _Avoid_: sell signal, exit signal
+
+**Fee-aware label**:
+A training label that only fires when the predicted move clears round-trip trading costs plus a buffer — the classifier-era form of the cost-aware execution discipline.
+_Avoid_: profit target, signal threshold
+
+**Self-archive**:
+Recording a data source's raw responses locally from day one because it offers no queryable history — what makes live-only news backtestable later.
+_Avoid_: caching, backups
