@@ -8,3 +8,4 @@ bot/bot.log
 bot/user_data/data/
 bot/user_data/hyperopt_results/
 bot/user_data/backtest_results/
+bot/config-private.json

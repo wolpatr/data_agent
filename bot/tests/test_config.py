@@ -64,6 +64,7 @@ def test_private_overlay_template_merges_and_validates():
     assert api["listen_ip_address"] == "127.0.0.1"
     assert api["username"] == "freqtrade"
     assert api["password"].startswith("CHANGE_ME")
+    assert api["jwt_secret_key"].startswith("CHANGE_ME")
 
 
 def test_real_private_config_is_ignored_by_git():
