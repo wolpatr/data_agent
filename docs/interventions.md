@@ -4,3 +4,4 @@ One line per manual action (what/when/why/bot state). Allowed: pause entries, fo
 
 | Date | Action | Command | Reason | Bot state |
 |---|---|---|---|---|
+| 2026-11-09 ~18:52Z | Re-arm (started trading) | `POST /api/v1/start` | first-run smoke complete; paper-run gate clock starts | stopped → running |
