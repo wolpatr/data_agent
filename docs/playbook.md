@@ -21,17 +21,17 @@ All commands run from the **repo root**. Dependencies are managed by **uv** (`py
 uv run freqtrade trade --config bot/config.json --config bot/config-private.json --logfile bot/bot.log
 ```
 
-**Re-arm** (the bot boots `STOPPED` by design — human-in-the-loop):
+**Re-arm** (the bot boots `STOPPED` by design — human-in-the-loop; use `curl.exe`, not PowerShell's `curl` alias):
 
 ```
-curl -s -X POST http://127.0.0.1:8080/api/v1/start -u "username:password"
+curl.exe -s -X POST http://127.0.0.1:8080/api/v1/start -u "username:password"
 ```
 
 **Dashboard**: open `http://127.0.0.1:8080` (freqUI).
 
 ## 2. Control surface (localhost REST)
 
-| Action | Command | Effect |
+| Action | Command (`curl.exe` — PowerShell's `curl` alias has no `-u`) | Effect |
 |---|---|---|
 | Pause entries (exits keep managed) | `POST /pause` | blocks new entries; resets on restart |
 | Full stop | `POST /stop` | halts loop; with `cancel_open_orders_on_exit` cancels unfilled orders |
