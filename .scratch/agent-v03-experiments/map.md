@@ -34,7 +34,7 @@ A **build-ready experimentation-infrastructure spec**: a convention-based runner
 
 ## Open decisions
 
-1. **Author the experimentation spec** — all receipts in hand (historical-data sources, seal literature, FreqAI mechanics, vector stores); closes this map into the hand-off; implementation sessions follow (TDD, pre-agreed seams: declaration validation, split resolution, runner orchestration, ledger/trial writes, reproducibility hashing).
+1. **Author the experimentation spec** — receipts in hand (historical-data, seal literature + trials-ledger rule, FreqAI mechanics, vector stores); grill round 2026-11-10 accepted: **fold schedule derived** (3m windows sliding back from holdout start until the 15m span hits the 2021-07 data floor — ~16 folds, recorded per run); **protocol translation** (`train_period_days: 450` = 12m train+3m val span, `data_split_parameters.test_size: 0.2` as the val proxy, 3m backtest window = test set; deviation from 2606.00060's explicit val window documented); **coverage gate** (runner refuses experiments whose derived windows lack candles; store refresh extends coverage to live-accumulated data — the sealed holdout range still governed by the seal); **six TDD seams** (declaration validation, split resolver, sweep expansion, runner orchestration + merged-config hashing, SQLite trial writes, coverage gate). **Pending**: hyperopt-vs-grid mechanism — native `freqtrade hyperopt` surface vs FreqAI model params under fact-check (running); closes on receipt, then the spec completes and the map closes.
 
 ## Not yet specified
 
