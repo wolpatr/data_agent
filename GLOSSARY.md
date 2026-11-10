@@ -73,3 +73,9 @@ _Avoid_: profit target, signal threshold
 **Self-archive**:
 Recording a data source's raw responses locally from day one because it offers no queryable history — what makes live-only news backtestable later.
 _Avoid_: caching, backups
+
+### Evidence
+
+**Holdout seal**:
+A frozen timerange whose results are computed exactly once per proposal; consulting it again is a logged intervention, not a habit.
+_Avoid_: test set (too loose — every run has tests), validation
