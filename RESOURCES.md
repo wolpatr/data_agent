@@ -54,5 +54,5 @@ All links verified live during session 1 (2026-11-09) unless marked otherwise.
 ## Gaps
 
 - Vet [r/algotrading](https://www.reddit.com/r/algotrading/) — fetch returned an empty shell this session; content unverified.
-- Free historical OHLCV data for backtesting in the Python pipeline (candidates: Binance public data dumps — account-blocked for EU users since May 2026 but public archives unaffected; Bybit OHLCV via CCXT/freqtrade `download-data`) — rides the data-pipeline open decision on the map.
+- Free historical OHLCV data for backtesting — **resolved 2026-11-10** (`research/historical-data-sources.md`): Bybit public OHLCV reaches 2021-07-05 (covers the v0.3 paper protocol); Binance public dumps verified key-free and EU-reachable (spot 1h back to 2017-08-17) via freqtrade's native `download-data --exchange binance`; CryptoCompare/OKX unsuitable (401-gated / shallow 1H history).
 - Survey of Python backtesting options beyond freqtrade's built-in backtester — only worth researching if the built-in fails a need.
